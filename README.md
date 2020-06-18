@@ -5,4 +5,5 @@ Background color of each segment will be based on array of colors. If not provid
 
 ![](Resources/animation-1.gif)
 
-![](Resources/animation-1.gif)
+
+![](Resources/animation-2.gif)
