@@ -9,8 +9,8 @@
 import UIKit
 
 protocol CircularControlDelegate: class {
-    func onSelectionClicked(_ selectedIndex: Int)
-    func onValueChanged(_ selectedIndex: Int)
+    func onSelectionClicked(_ selectedIndex: Int, _ selectedValue: String)
+    func onValueChanged(_ selectedIndex: Int, _ selectedValue: String)
 }
 
 public class CircularControl: UIControl {
@@ -35,35 +35,36 @@ public class CircularControl: UIControl {
         super.init(coder: aDecoder)
     }
 
-    init(frame: CGRect, items:[String], colors:[UIColor], selectorIcon: UIImage) {
+    init(frame: CGRect, items:[String], colors:[UIColor], selectorIcon: UIImage?) {
         super.init(frame: frame)
         titleArray = items
         colorArray = colors
         initilize(selectorIcon)
     }
     
-    func initilize(_ image: UIImage) {
+    func initilize(_ image: UIImage?) {
         
         containerView.isUserInteractionEnabled = false
         containerView.frame = self.bounds
         self.addSubview(containerView)
         createSubLayers()
         
-//        selectorButton.titleLabel?.font = nobTitleFont
-        selectorButton.contentVerticalAlignment = .center
-        selectorButton.setImage(image, for: .normal)
-        selectorButton.setTitleColor(.black, for: .normal)
-        selectorButton.backgroundColor = .clear
-        selectorButton.addTarget(self, action: #selector(onSelectorButtonClick(_:)), for: .touchUpInside)
-        selectorButton.translatesAutoresizingMaskIntoConstraints = false
-        self.addSubview(selectorButton)
-        
-        NSLayoutConstraint.activate([
-            selectorButton.widthAnchor.constraint(equalToConstant: 90),
-            selectorButton.heightAnchor.constraint(equalToConstant: 90),
-            selectorButton.centerXAnchor.constraint(equalTo: self.centerXAnchor),
-            selectorButton.centerYAnchor.constraint(equalTo: self.centerYAnchor),
-        ])
+        if let img = image {
+            selectorButton.contentVerticalAlignment = .center
+            selectorButton.setImage(img, for: .normal)
+            selectorButton.setTitleColor(.black, for: .normal)
+            selectorButton.backgroundColor = .clear
+            selectorButton.addTarget(self, action: #selector(onSelectorButtonClick(_:)), for: .touchUpInside)
+            selectorButton.translatesAutoresizingMaskIntoConstraints = false
+            self.addSubview(selectorButton)
+            
+            NSLayoutConstraint.activate([
+                selectorButton.widthAnchor.constraint(equalToConstant: 90),
+                selectorButton.heightAnchor.constraint(equalToConstant: 90),
+                selectorButton.centerXAnchor.constraint(equalTo: self.centerXAnchor),
+                selectorButton.centerYAnchor.constraint(equalTo: self.centerYAnchor),
+            ])
+        }
     }
     
     /** Set bounds of all the sub layers **/
@@ -73,7 +74,7 @@ public class CircularControl: UIControl {
     }
     
     @objc func onSelectorButtonClick(_ sender: UIButton) {
-        delegate?.onSelectionClicked(selectedIndex)
+        delegate?.onSelectionClicked(selectedIndex, titleArray?[selectedIndex] ?? "")
     }
     
     var deltaAngle: CGFloat = 0
@@ -126,9 +127,16 @@ public class CircularControl: UIControl {
             self.containerView.transform = self.containerView.transform.rotated(by: -newVal)
         }
         selectedIndex = currentValue
-        delegate?.onValueChanged(currentValue)
+        delegate?.onValueChanged(currentValue, titleArray?[selectedIndex] ?? "")
     }
     
+    func setSelectedIndex(_ index: Int) {
+        if let shape = circleRenderer.shapeArray.filter({$0.value == index}).first {
+            UIView.animate(withDuration: 0.2) {
+                self.containerView.transform = self.containerView.transform.rotated(by: shape.midValue)
+            }
+        }
+    }
 }
 
 private class CircleRenderer {
