@@ -26,6 +26,8 @@ public class CircularControl: UIControl {
     private var selectedColor: UIColor?
     
     private var selectedIndex: Int = 0
+    private var isTappedOnly: Bool = false
+    
     var delegate: CircularControlDelegate?
     
     private override init(frame: CGRect) {
@@ -82,19 +84,19 @@ public class CircularControl: UIControl {
     var deltaAngle: CGFloat = 0
     var startTransform: CGAffineTransform?
     
-    override public func beginTracking(_ touch: UITouch, with event: UIEvent?) -> Bool {
-        
+    override public func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let touch = touches.first else {return}
         let touchPoint = touch.location(in: self)
         
         let dx = touchPoint.x - containerView.center.x
         let dy = touchPoint.y - containerView.center.y
         deltaAngle = atan2(dy, dx)
         startTransform = containerView.transform
-        return true
+        isTappedOnly = true
     }
     
-    override public func continueTracking(_ touch: UITouch, with event: UIEvent?) -> Bool {
-        
+    override public func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let touch = touches.first else {return}
         let touchPoint = touch.location(in: self)
         
         let dx = touchPoint.x - containerView.center.x
@@ -102,38 +104,46 @@ public class CircularControl: UIControl {
         let ang = atan2(dy, dx)
         let diff = deltaAngle - ang
         containerView.transform = startTransform!.rotated(by: -diff)
-        return true
+        isTappedOnly = false
     }
     
-    override public func endTracking(_ touch: UITouch?, with event: UIEvent?) {
+    override public func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         let radian = CGFloat(atan2f(Float(containerView.transform.b), Float(containerView.transform.a)))
-        
-        var newVal: CGFloat = 0.0
+
         var currentValue: Int = 0
-        
-        for shape in circleRenderer.shapeArray {
-            if shape.minValue > 0 && shape.maxValue < 0 {
-                if shape.maxValue > radian || shape.minValue < radian {
-                    if radian > 0 {
-                        newVal = radian - CGFloat(Double.pi)
-                    } else {
-                        newVal = CGFloat(Double.pi) + radian
+        var newVal: CGFloat = 0
+
+        if isTappedOnly {
+            isTappedOnly = false
+            guard let touch = touches.first else {return}
+            let touchPoint = touch.location(in: containerView)
+            
+            if let layer = (self.circleRenderer.circleLayer.sublayers as? [CustomShapeLayer])?.filter({$0.path?.contains(touchPoint) ?? false}).first {
+                setSelectedIndex(layer.index)
+            }
+        } else {
+            for shape in circleRenderer.shapeArray {
+                if shape.minValue > 0 && shape.maxValue < 0 {
+                    if shape.maxValue > radian || shape.minValue < radian {
+                        if radian > 0 {
+                            newVal = radian - CGFloat(Double.pi)
+                        } else {
+                            newVal = CGFloat(Double.pi) + radian
+                        }
+                        currentValue = shape.value
                     }
+                } else if (radian > shape.minValue && radian < shape.maxValue) {
+                    newVal = radian - shape.midValue
                     currentValue = shape.value
                 }
-            } else if (radian > shape.minValue && radian < shape.maxValue) {
-                newVal = radian - shape.midValue
-                currentValue = shape.value
             }
+            UIView.animate(withDuration: 0.2) {
+                self.containerView.transform = self.containerView.transform.rotated(by: -newVal)
+            }
+            updateSelectedLayerColor(currentValue)
+            selectedIndex = currentValue
         }
-        UIView.animate(withDuration: 0.2) {
-            self.containerView.transform = self.containerView.transform.rotated(by: -newVal)
-        }
-        
-        updateSelectedLayerColor(currentValue)
-        
-        selectedIndex = currentValue
-        delegate?.onValueChanged(currentValue, titleArray?[selectedIndex] ?? "")
+        delegate?.onValueChanged(selectedIndex, titleArray?[selectedIndex] ?? "")
     }
     
     func updateSelectedLayerColor(_ currentValue: Int) {
@@ -152,7 +162,7 @@ public class CircularControl: UIControl {
     func setSelectedIndex(_ index: Int) {
         if let shape = circleRenderer.shapeArray.filter({$0.value == index}).first {
             UIView.animate(withDuration: 0.2) {
-                self.containerView.transform = self.containerView.transform.rotated(by: shape.midValue)
+                self.containerView.transform = CGAffineTransform(rotationAngle: shape.midValue)
             }
             updateSelectedLayerColor(index)
             selectedIndex = index
