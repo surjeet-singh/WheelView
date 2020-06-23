@@ -23,7 +23,8 @@ public class CircularControl: UIControl {
     
     private var titleArray: [String]?
     private var colorArray: [UIColor]?
-
+    private var selectedColor: UIColor?
+    
     private var selectedIndex: Int = 0
     var delegate: CircularControlDelegate?
     
@@ -35,10 +36,11 @@ public class CircularControl: UIControl {
         super.init(coder: aDecoder)
     }
 
-    init(frame: CGRect, items:[String], colors:[UIColor], selectorIcon: UIImage?) {
+    init(frame: CGRect, items:[String], colors:[UIColor], selectorIcon: UIImage?, selectedColor: UIColor? = nil) {
         super.init(frame: frame)
         titleArray = items
         colorArray = colors
+        self.selectedColor = selectedColor
         initilize(selectorIcon)
     }
     
@@ -69,7 +71,7 @@ public class CircularControl: UIControl {
     
     /** Set bounds of all the sub layers **/
     func createSubLayers() {
-        circleRenderer.update(bounds: bounds, titleArray: titleArray, colorArray: colorArray)
+        circleRenderer.update(bounds: bounds, titleArray: titleArray, colorArray: colorArray, selectedColor: selectedColor)
         containerView.layer.addSublayer(circleRenderer.circleLayer)
     }
     
@@ -81,6 +83,7 @@ public class CircularControl: UIControl {
     var startTransform: CGAffineTransform?
     
     override public func beginTracking(_ touch: UITouch, with event: UIEvent?) -> Bool {
+        
         let touchPoint = touch.location(in: self)
         
         let dx = touchPoint.x - containerView.center.x
@@ -126,8 +129,24 @@ public class CircularControl: UIControl {
         UIView.animate(withDuration: 0.2) {
             self.containerView.transform = self.containerView.transform.rotated(by: -newVal)
         }
+        
+        updateSelectedLayerColor(currentValue)
+        
         selectedIndex = currentValue
         delegate?.onValueChanged(currentValue, titleArray?[selectedIndex] ?? "")
+    }
+    
+    func updateSelectedLayerColor(_ currentValue: Int) {
+        if let color = selectedColor, currentValue != self.selectedIndex { // Change color only if selected index changed
+            
+            if let layer = (self.circleRenderer.circleLayer.sublayers as? [CustomShapeLayer])?.filter({$0.index == self.selectedIndex}).first { // reset previous selected index to default color
+                layer.fillColor = layer.bgColor?.cgColor
+            }
+            
+            if let layer = (self.circleRenderer.circleLayer.sublayers as? [CustomShapeLayer])?.filter({$0.index == currentValue}).first { // Change selected index background color
+                layer.fillColor = color.cgColor
+            }
+        }
     }
     
     func setSelectedIndex(_ index: Int) {
@@ -135,6 +154,8 @@ public class CircularControl: UIControl {
             UIView.animate(withDuration: 0.2) {
                 self.containerView.transform = self.containerView.transform.rotated(by: shape.midValue)
             }
+            updateSelectedLayerColor(index)
+            selectedIndex = index
         }
     }
 }
@@ -151,7 +172,7 @@ private class CircleRenderer {
     }
 
     /** Draw the segment layers paths **/
-    func update(titleArray: [String], colorArray: [UIColor]?) {
+    func update(titleArray: [String], colorArray: [UIColor]?, selectedColor: UIColor?) {
         let center = CGPoint(x: circleLayer.bounds.size.width / 2.0, y: circleLayer.bounds.size.height / 2.0)
         let radius:CGFloat = min(circleLayer.bounds.size.width, circleLayer.bounds.size.height) / 2
         let segmentSize = CGFloat((Double.pi*2) / Double(titleArray.count))
@@ -161,13 +182,19 @@ private class CircleRenderer {
             let endAngle = segmentSize*CGFloat(i+1) - segmentSize/2
             let midAngle = (startAngle+endAngle)/2
             
-            let shapeLayer = CAShapeLayer()
+            let shapeLayer = CustomShapeLayer()
+            shapeLayer.index = i
             if let colors = colorArray, colors.count > i {
                 shapeLayer.fillColor = colors[i].cgColor
+                shapeLayer.bgColor = colors[i]
             } else {
-                shapeLayer.fillColor = UIColor.random.cgColor
+                let randomColor = UIColor.random
+                shapeLayer.fillColor = randomColor.cgColor
+                shapeLayer.bgColor = randomColor
             }
-            
+            if let selColor = selectedColor , i == 0 { // Index 0 is always selected index at initial state
+                shapeLayer.fillColor = selColor.cgColor
+            }
             let bezierPath = UIBezierPath(arcCenter: center, radius: radius, startAngle: startAngle, endAngle: endAngle, clockwise: true)
             bezierPath.addLine(to: center)
             shapeLayer.path = bezierPath.cgPath
@@ -193,7 +220,7 @@ private class CircleRenderer {
     }
 
     /** Update the frame and position of the layers **/
-    func update(bounds: CGRect, titleArray: [String]?, colorArray: [UIColor]?) {
+    func update(bounds: CGRect, titleArray: [String]?, colorArray: [UIColor]?, selectedColor: UIColor?) {
         let position = CGPoint(x: bounds.width / 2.0, y: bounds.height / 2.0)
 
         circleLayer.position = position
@@ -201,7 +228,7 @@ private class CircleRenderer {
 
         guard let titles = titleArray else {return}
         buildShapeObjects(titles.count)
-        update(titleArray: titles, colorArray: colorArray)
+        update(titleArray: titles, colorArray: colorArray, selectedColor: selectedColor)
     }
     
     func buildShapeObjects(_ segments: Int) {
@@ -240,6 +267,11 @@ class Shape: NSObject {
     var maxValue: CGFloat = 0
     var midValue: CGFloat = 0
     var value: Int = 0
+}
+
+class CustomShapeLayer: CAShapeLayer {
+    var index: Int = 0
+    var bgColor: UIColor?
 }
 
 extension UIColor {

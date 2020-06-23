@@ -18,7 +18,7 @@ class ViewController: UIViewController, CircularControlDelegate {
     
         let width = UIScreen.main.bounds.size.width - 30
         let origY: CGFloat = 100 // (UIScreen.main.bounds.size.height - width) / 2
-        control = CircularControl(frame: CGRect(x: 10, y: origY, width: width, height: width), items: ["Title 1", "Title 2", "Title 3", "Title 4","Title 5", "Title 6"], colors: [], selectorIcon: nil)
+        control = CircularControl(frame: CGRect(x: 10, y: origY, width: width, height: width), items: ["Title 1", "Title 2", "Title 3", "Title 4","Title 5", "Title 6"], colors: [UIColor.red, UIColor.cyan, UIColor.green, UIColor.lightGray, UIColor.blue, UIColor.purple], selectorIcon: nil, selectedColor: UIColor.black)
         control?.delegate = self
         self.view.addSubview(control!)
     }
@@ -27,8 +27,8 @@ class ViewController: UIViewController, CircularControlDelegate {
         super.viewDidAppear(animated)
         
         // To set selected index
-//        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+5) {
-//            self.control?.setSelectedIndex(7)
+//        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+2) {
+//            self.control?.setSelectedIndex(3)
 //        }
     }
     
