@@ -1,6 +1,6 @@
 //
 //  SceneDelegate.swift
-//  CircularMenu
+//  WheelView
 //
 //  Created by Surjeet on 07/06/20.
 //  Copyright © 2020 Surjeet. All rights reserved.

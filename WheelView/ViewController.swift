@@ -1,6 +1,6 @@
 //
 //  ViewController.swift
-//  CircularMenu
+//  WheelView
 //
 //  Created by Surjeet on 07/06/20.
 //  Copyright © 2020 Surjeet. All rights reserved.
@@ -18,7 +18,7 @@ class ViewController: UIViewController, CircularControlDelegate {
     
         let width = UIScreen.main.bounds.size.width - 30
         let origY: CGFloat = 100 // (UIScreen.main.bounds.size.height - width) / 2
-        control = CircularControl(frame: CGRect(x: 10, y: origY, width: width, height: width), items: ["Title 1", "Title 2", "Title 3", "Title 4","Title 5", "Title 6"], colors: [UIColor.red, UIColor.cyan, UIColor.green, UIColor.lightGray, UIColor.blue, UIColor.purple], selectorIcon: nil, selectedColor: UIColor.black)
+        control = CircularControl(frame: CGRect(x: 10, y: origY, width: width, height: width), items: ["Title 1", "Title 2", "Title 3", "Title 4","Title 5", "Title 6"], colors: [UIColor.red, UIColor.cyan, UIColor.green, UIColor.lightGray, UIColor.blue, UIColor.purple], selectorIcon: UIImage(named: "centerButton"), selectedColor: UIColor.black)
         control?.delegate = self
         self.view.addSubview(control!)
     }
@@ -33,7 +33,7 @@ class ViewController: UIViewController, CircularControlDelegate {
     }
     
     func onValueChanged(_ selectedIndex: Int, _ selectedValue: String) {
-        print("Value changed to Index: \(selectedIndex) \n Value: \(selectedValue)")
+        print("Value changed to Index: \(selectedIndex) Value: \(selectedValue)")
     }
 
     func onSelectionClicked(_ selectedIndex: Int, _ selectedValue: String) {
